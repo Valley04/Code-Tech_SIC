@@ -1,6 +1,7 @@
 import pandas as pd
 import time
 import os
+import matplotlib.pyplot as plt
 from getpass import getpass
 from datetime import datetime
 from tkinter import Tk, Label, Entry, Button, StringVar, messagebox
@@ -160,23 +161,107 @@ def registro_balance(user):
     print("Operación registrada exitosamente!")
     time.sleep(2)
 
+def ahorro_personalizado():
+    porcentaje = 100
+    gastos = int(input("Porcentaje destinado para gastos: "))
+
+    if gastos <= porcentaje & gastos >= 0:
+        porcentaje -= gastos
+        ahorro = int(input("Porcentaje destinado para ahorro: "))
+
+        if ahorro <= porcentaje & ahorro >= 0:
+            porcentaje -= ahorro
+            ocio = porcentaje
+            return gastos, ahorro, ocio
+        else:
+            print("Porcentaje no valido")
+            return
+    else:
+        print("Porcentaje no valido")
+        return
+
+# Selecciona un plan de ahorro y devuelve las proporciones correspondientes.
+def seleccionar_plan_ahorro():
+
+    while True:
+        print("\nSelecciona un plan de ahorro:")
+        print("1. 60% Gastos, 20% Ahorro, 20% Ocio")
+        print("2. 50% Gastos, 20% Ahorro, 30% Ocio")
+        print("3. 70% Gastos, 20% Ahorro, 10% Ocio")
+        print("4. Personalizar plan de ahorro...")
+
+        try:
+            opcion = int(input("Elige una opción: "))
+            if opcion == 1:
+                return 0.60, 0.30, 0.10
+            elif opcion == 2:
+                return 0.50, 0.35, 0.15
+            elif opcion == 3:
+                return 0.70, 0.20, 0.10
+            elif opcion == 4:
+                ahorro_personalizado()
+            else:
+                print("Opción no válida, selecciona nuevamente.")
+        except ValueError:
+            print("Entrada no válida, ingresa un número (1, 2, o 3).")
+
+# Calcula la distribución del ingreso según el plan de ahorro seleccionado.
+def calcular_distribucion(ingresos, plan):
+    gastos_fijos = ingresos * plan[0]
+    ahorro = ingresos * plan[1]
+    ocio = ingresos * plan[2]
+    return gastos_fijos, ahorro, ocio
+
+# Muestra una gráfica de barras con la distribución del ingreso.
+def mostrar_grafica(gastos_fijos, ahorro, ocio):
+    categorias = ['Gastos Fijos', 'Ahorro', 'Ocio']
+    valores = [gastos_fijos, ahorro, ocio]
+
+    plt.figure(figsize=(10, 5))
+    barras = plt.bar(categorias, valores, color=['blue', 'green', 'red'])
+    plt.xlabel('Categorías')
+    plt.ylabel('Monto')
+    plt.title('Distribución del Ingreso')
+
+    # Añadir etiquetas con la cantidad exacta de dinero
+    for barra in barras:
+        altura = barra.get_height()
+        plt.annotate(f'{altura:.2f}', xy=(barra.get_x() + barra.get_width() / 2, altura),
+                     xytext=(0, 3),  # 3 puntos de desplazamiento vertical
+                     textcoords="offset points", ha='center', va='bottom')
+    plt.show()
 
 # Función que muestra un menú para usuarios en sesión activa
 def menu_sesion(user):
     intentos = 0
     max_intentos = 3  # Número máximo de intentos permitidos
+    index = usuarios.loc[usuarios['User'] == user].index[0]
+    ingresos_totales = usuarios.loc[index, "Balance"]
 
     while True:
         print("\nBienvenido a Finance")
         print("1. Registrar ingreso/egreso")
-        print("2. Cerrar sesión")
+        print("2. Seleccionar plan de ahorro")
+        print("3. Mostrar historial de transacciones")
+        print("4. Cerrar sesión")
 
         opcion = input("Seleccione una opción: ")
 
         if opcion == "1":
             registro_balance(user)
             intentos = 0  # Reiniciar contador de intentos tras una acción válida
-        elif opcion == "2":
+        elif opcion == '2':
+            if ingresos_totales > 0:
+                    gastos_fijos, ahorro, ocio = calcular_distribucion(ingresos_totales, seleccionar_plan_ahorro())
+                    mostrar_grafica(gastos_fijos, ahorro, ocio)
+                    intentos = 0
+            else:
+                print("Por favor, ingrese un monto antes de seleccionar un plan de ahorro.")
+        elif opcion == '3':
+            print("Proximamente...")
+            time.sleep(2)
+            return
+        elif opcion == "4":
             print("Cerrando sesión...")
             time.sleep(2)
             menu()
